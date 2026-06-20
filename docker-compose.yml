@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  api:
+    build: ./backend
+    ports:
+      - '5000:5000'
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production-min-32-chars}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-me-refresh-min-32-chars}
+      - CORS_ORIGIN=http://localhost:5173
+      - FIREBASE_PROJECT_ID=digi-tracker-8b0be
+    volumes:
+      - ./backend/credentials:/app/credentials:ro
+    restart: unless-stopped
+
+  admin:
+    build: ./admin
+    ports:
+      - '5173:80'
+    depends_on:
+      - api
+    restart: unless-stopped
