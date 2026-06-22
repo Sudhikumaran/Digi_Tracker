@@ -12,8 +12,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'staff@fitnesspro.com');
-  final _passwordController = TextEditingController(text: 'Staff@123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscure = true;
 
   @override
@@ -171,12 +171,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      'Demo: staff@fitnesspro.com / Staff@123',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),

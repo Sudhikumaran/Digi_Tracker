@@ -47,13 +47,17 @@ flutter pub get
 flutter run -d chrome
 ```
 
-## Demo credentials (after seed)
+## Production accounts (after `npm run seed`)
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | superadmin@digitracker.com | SuperAdmin@123 |
-| Owner | owner@fitnesspro.com | Owner@123 |
-| Staff | staff@fitnesspro.com | Staff@123 |
+Set `SEED_*_PASSWORD` variables in Railway before seeding. Default emails:
+
+| Role | Email |
+|------|-------|
+| Super Admin | `superadmin@digitracker.com` |
+| Business Admin | `admin@digitracker.com` |
+| Staff | `staff@digitracker.com` |
+
+The seed creates login accounts and an empty business shell only — no demo modules, entries, or sample data.
 
 ## Docs
 

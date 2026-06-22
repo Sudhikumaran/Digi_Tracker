@@ -9,17 +9,22 @@
    - Choose **Production mode** or **Test mode** for development
    - Pick a region (e.g. `asia-south1` or `us-central1`)
 
-## Seed data
+## Production seed
 
 ```bash
 cd backend
 npm run seed
 ```
 
-Demo logins after seed:
-- Super Admin: `superadmin@digitracker.com` / `SuperAdmin@123`
-- Owner: `owner@fitnesspro.com` / `Owner@123`
-- Staff: `staff@fitnesspro.com` / `Staff@123`
+Requires `SEED_SUPERADMIN_PASSWORD`, `SEED_ADMIN_PASSWORD`, and `SEED_STAFF_PASSWORD` when `NODE_ENV=production`.
+
+Default accounts (passwords from env):
+
+- Super Admin: `superadmin@digitracker.com`
+- Business Admin: `admin@digitracker.com`
+- Staff: `staff@digitracker.com`
+
+No demo modules or entries are created — only subscription plans, one empty business, and the three login accounts.
 
 ## Start API
 

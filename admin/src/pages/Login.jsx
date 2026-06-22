@@ -5,8 +5,8 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const [email, setEmail] = useState('owner@fitnesspro.com');
-  const [password, setPassword] = useState('Owner@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -39,7 +39,7 @@ export default function Login() {
             Monitor your business metrics across all channels in one powerful dashboard.
           </p>
         </div>
-        <p className="text-primary-300 text-sm">Trusted by gyms, restaurants, agencies & more</p>
+        <p className="text-primary-300 text-sm">Business growth tracking for modern teams</p>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-8">
@@ -60,6 +60,7 @@ export default function Login() {
                 <input
                   type="email"
                   className="input pl-10"
+                  placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -95,10 +96,6 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Demo: owner@fitnesspro.com / Owner@123
-          </p>
         </div>
       </div>
     </div>

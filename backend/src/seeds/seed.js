@@ -1,14 +1,13 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const connectDB = require('../config/database');
 const store = require('../db/firestoreStore');
 const { COLLECTIONS } = store;
 const userRepository = require('../repositories/userRepository');
 const businessRepository = require('../repositories/businessRepository');
-const moduleRepository = require('../repositories/moduleRepository');
-const entryRepository = require('../repositories/entryRepository');
 const { planRepository, subscriptionRepository } = require('../repositories/firebaseRepositories');
-const { seedDefaultModules } = require('./defaultModules');
-const { startOfDay } = require('../utils/dateUtils');
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 const plans = [
   {
@@ -46,6 +45,40 @@ const plans = [
   },
 ];
 
+const accounts = {
+  superAdmin: {
+    email: process.env.SEED_SUPERADMIN_EMAIL || 'superadmin@digitracker.com',
+    password: process.env.SEED_SUPERADMIN_PASSWORD,
+    firstName: 'Super',
+    lastName: 'Admin',
+    role: 'super_admin',
+  },
+  admin: {
+    email: process.env.SEED_ADMIN_EMAIL || 'admin@digitracker.com',
+    password: process.env.SEED_ADMIN_PASSWORD,
+    firstName: 'Business',
+    lastName: 'Admin',
+    role: 'business_owner',
+  },
+  staff: {
+    email: process.env.SEED_STAFF_EMAIL || 'staff@digitracker.com',
+    password: process.env.SEED_STAFF_PASSWORD,
+    firstName: 'Staff',
+    lastName: 'Member',
+    role: 'staff',
+  },
+};
+
+function resolvePassword(envPassword, label) {
+  if (envPassword) return envPassword;
+  if (isProduction) {
+    throw new Error(
+      `Missing ${label} in production. Set it in Railway/backend variables before running seed.`
+    );
+  }
+  return crypto.randomBytes(16).toString('base64url');
+}
+
 async function clearAll() {
   for (const col of Object.values(COLLECTIONS)) {
     await store.clearCollection(col);
@@ -54,128 +87,84 @@ async function clearAll() {
 
 async function seed() {
   await connectDB();
-  console.log('Seeding Firestore...');
+  console.log(`Seeding Firestore (${isProduction ? 'production' : 'development'})...`);
+  console.log('Clearing existing data...');
 
   await clearAll();
 
   for (const plan of plans) {
     await planRepository.create(plan);
   }
-  console.log('Plans seeded');
+  console.log('Subscription plans created');
 
-  const superAdmin = await userRepository.create({
-    email: 'superadmin@digitracker.com',
-    password: 'SuperAdmin@123',
-    firstName: 'Super',
-    lastName: 'Admin',
-    role: 'super_admin',
+  const superAdminPassword = resolvePassword(accounts.superAdmin.password, 'SEED_SUPERADMIN_PASSWORD');
+  const adminPassword = resolvePassword(accounts.admin.password, 'SEED_ADMIN_PASSWORD');
+  const staffPassword = resolvePassword(accounts.staff.password, 'SEED_STAFF_PASSWORD');
+
+  await userRepository.create({
+    email: accounts.superAdmin.email,
+    password: superAdminPassword,
+    firstName: accounts.superAdmin.firstName,
+    lastName: accounts.superAdmin.lastName,
+    role: accounts.superAdmin.role,
   });
-  console.log('Super Admin created:', superAdmin.email);
+  console.log('Super Admin created:', accounts.superAdmin.email);
 
   const business = await businessRepository.create({
-    name: 'Fitness Pro Gym',
-    slug: 'fitness-pro-gym',
-    type: 'gym',
-    email: 'owner@fitnesspro.com',
-    contactNumber: '+1234567890',
-    timezone: 'America/New_York',
-    address: { city: 'New York', state: 'NY', country: 'USA' },
+    name: 'DigiTracker Organization',
+    slug: 'digitracker-organization',
+    type: 'business',
+    email: accounts.admin.email,
+    contactNumber: '',
+    timezone: 'UTC',
     onboardingCompleted: true,
   });
 
-  const owner = await userRepository.create({
-    email: 'owner@fitnesspro.com',
-    password: 'Owner@123',
-    firstName: 'John',
-    lastName: 'Doe',
-    role: 'business_owner',
+  const admin = await userRepository.create({
+    email: accounts.admin.email,
+    password: adminPassword,
+    firstName: accounts.admin.firstName,
+    lastName: accounts.admin.lastName,
+    role: accounts.admin.role,
     businessId: business._id,
   });
 
-  const staff = await userRepository.create({
-    email: 'staff@fitnesspro.com',
-    password: 'Staff@123',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    role: 'staff',
+  await userRepository.create({
+    email: accounts.staff.email,
+    password: staffPassword,
+    firstName: accounts.staff.firstName,
+    lastName: accounts.staff.lastName,
+    role: accounts.staff.role,
     businessId: business._id,
-    rewardPoints: 120,
-    currentStreak: 5,
-    longestStreak: 12,
   });
 
   const proPlan = await planRepository.findBySlug('professional');
-  const trialEnd = new Date();
-  trialEnd.setDate(trialEnd.getDate() + 14);
   await subscriptionRepository.create({
     businessId: business._id,
     planId: proPlan._id,
-    status: 'trial',
-    trialEndsAt: trialEnd,
+    status: 'active',
+    startDate: new Date(),
   });
 
-  await seedDefaultModules(business._id, owner._id);
-
-  await moduleRepository.create({
-    businessId: business._id,
-    name: 'YouTube',
-    slug: 'youtube',
-    description: 'Track YouTube channel metrics',
-    icon: 'youtube',
-    color: '#FF0000',
-    createdBy: owner._id,
-    isActive: true,
-    fields: [
-      { name: 'Subscribers', slug: 'subscribers', type: 'number', required: true, order: 1, isActive: true },
-      { name: 'Views', slug: 'views', type: 'number', required: true, order: 2, isActive: true },
-      { name: 'Watch Time (hrs)', slug: 'watch_time', type: 'number', required: false, order: 3, isActive: true },
-    ],
-  });
-
-  const modules = await moduleRepository.findByBusiness(business._id);
-  const instagram = modules.find((m) => m.slug === 'instagram');
-  const whatsapp = modules.find((m) => m.slug === 'whatsapp-community');
-
-  for (let i = 30; i >= 0; i--) {
-    const date = startOfDay(new Date());
-    date.setDate(date.getDate() - i);
-
-    const igFollowers = 1000 + (30 - i) * 15 + Math.floor(Math.random() * 10);
-    await entryRepository.create({
-      businessId: business._id,
-      moduleId: instagram._id,
-      userId: staff._id,
-      entryDate: date,
-      values: [
-        { fieldId: 'followers', fieldSlug: 'followers', value: igFollowers },
-        { fieldId: 'accounts_reached', fieldSlug: 'accounts_reached', value: igFollowers * 3 },
-        { fieldId: 'profile_visits', fieldSlug: 'profile_visits', value: Math.floor(igFollowers * 0.2) },
-      ],
-    });
-
-    const waMembers = 500 + (30 - i) * 8;
-    await entryRepository.create({
-      businessId: business._id,
-      moduleId: whatsapp._id,
-      userId: staff._id,
-      entryDate: date,
-      values: [
-        { fieldId: 'community_members', fieldSlug: 'community_members', value: waMembers },
-        { fieldId: 'new_members_joined', fieldSlug: 'new_members_joined', value: Math.floor(Math.random() * 15) + 2 },
-      ],
-    });
+  console.log('Business shell created for admin/staff (no modules or entries)');
+  console.log('\n--- Production seed complete ---');
+  console.log('Super Admin:', accounts.superAdmin.email);
+  console.log('Admin:      ', accounts.admin.email);
+  console.log('Staff:      ', accounts.staff.email);
+  if (!isProduction) {
+    console.log('\nDevelopment-only passwords (save these):');
+    console.log('Super Admin password:', superAdminPassword);
+    console.log('Admin password:      ', adminPassword);
+    console.log('Staff password:      ', staffPassword);
+  } else {
+    console.log('\nPasswords were taken from SEED_*_PASSWORD environment variables.');
+    console.log('Change them after first login via Settings or user management.');
   }
-
-  console.log('Sample entries seeded (31 days)');
-  console.log('\n--- Seed Complete ---');
-  console.log('Super Admin: superadmin@digitracker.com / SuperAdmin@123');
-  console.log('Owner:       owner@fitnesspro.com / Owner@123');
-  console.log('Staff:       staff@fitnesspro.com / Staff@123');
 
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error('Seed failed:', err);
+  console.error('Seed failed:', err.message || err);
   process.exit(1);
 });
