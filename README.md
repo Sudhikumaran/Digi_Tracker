@@ -44,8 +44,23 @@ Admin: http://localhost:5173
 ```bash
 cd mobile
 flutter pub get
-flutter run -d chrome
 ```
+
+**Production build (uses Railway API automatically):**
+
+```bash
+cd mobile
+.\scripts\build_release.ps1
+```
+
+**Test on a physical device against production:**
+
+```bash
+cd mobile
+.\scripts\run_production.ps1
+```
+
+APK output: `mobile/build/app/outputs/flutter-apk/app-release.apk`
 
 ## Production accounts (after `npm run seed`)
 

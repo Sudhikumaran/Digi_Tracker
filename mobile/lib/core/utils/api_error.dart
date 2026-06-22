@@ -11,7 +11,7 @@ String parseApiError(dynamic error) {
       case DioExceptionType.receiveTimeout:
         return 'Connection timed out. Please try again.';
       case DioExceptionType.connectionError:
-        return 'No internet connection. Check your network.';
+        return 'Cannot reach the server. Check your internet connection and try again.';
       default:
         return error.message ?? 'Something went wrong';
     }
